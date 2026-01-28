@@ -1,0 +1,105 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project-specific output
+output/
+*.log
+
+# Audio files (large files)
+*.wav
+*.mp3
+*.flac
+*.ogg
+*.m4a
+audio/
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# Data files (potentially large)
+*.csv
+data/
+datasets/
+
+# Credentials and secrets
+*.pem
+*.key
+*_key.pem
+openchs.pem
+.env
+.env.local
+secrets/
+credentials/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# TSV outputs (can be large)
+*.tsv
+
+# Compressed files
+*.zip
+*.tar.gz
+*.tgz
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini

@@ -1,0 +1,145 @@
+# ASR Data Augmentation Pipeline Configuration
+
+# Project metadata
+project:
+  name: "swahili_asr_dataset"
+  author: "k_nurf"
+  description: "Label Studio ASR export to Whisper-ready dataset"
+
+# Input configuration
+input:
+  csv_path: "project-3-at-2025-11-11-09-26-7246ba72.csv"
+  audio_remote_path: "ec2-user@ec2-18-177-175-202.ap-northeast-1.compute.amazonaws.com:/opt/label-studio/media/project_3/"
+  ssh_key_path: "~/openchs.pem"
+
+  # Path remapping
+  label_studio_prefix: "/data/media/project_3/"  # Path prefix in CSV
+  local_audio_dir: "audio/"  # Local directory for audio files (relative to base_dir)
+
+# Output configuration
+output:
+  base_dir: "output"
+  dataset_name: "swahili_asr_v6"
+
+# Data cleaning
+cleaning:
+  remove_duplicates: true
+  duplicate_strategy: "keep_first"  # keep_first, keep_last
+
+  # Columns to keep (others will be dropped)
+  keep_columns:
+    - audio
+    - transcription
+    - duration
+
+# Dataset splitting
+splitting:
+  train_ratio: 0.7
+  val_ratio: 0.2
+  test_ratio: 0.1
+  random_seed: 42
+  shuffle: true
+
+# Augmentation configuration
+augmentation:
+  # NOTE: Set to false for first run (before audio files are downloaded)
+  # After downloading audio files with download_audio.sh, set to true and re-run
+  enabled: true  # Set to true after downloading audio files
+  apply_to: "train"  # train, val, test, all
+
+  # Augmentation factor: how many times to multiply the dataset
+  # factor=1 means no augmentation, factor=5 means 5x the original size
+  factor: 5
+
+  # Shuffle augmented dataset to improve mini-batch diversity during training
+  # Prevents augmented versions of the same audio from being grouped together
+  # Recommended: true (improves convergence and reduces overfitting)
+  shuffle_after_augmentation: true
+
+  # Probability weights for each technique (NEW: weighted selection)
+  # Each technique is independently applied based on its probability
+  # Example: colored_noise=0.8 means 80% of samples get noise augmentation
+  probabilities:
+    colored_noise: 0.5     # Call center background noise (reduced from 0.8 to balance with other techniques)
+    crop_audio: 0.4        # VoIP packet loss simulation (nlpaug)
+    vtlp: 0.5              # Speaker variability (nlpaug)
+    mask_audio: 0.3        # Codec artifacts (nlpaug)
+    pitch_shift: 0.4       # Pitch variation (librosa) - increased slightly
+    time_stretch: 0.4      # Speed variation (librosa) - increased slightly
+    volume_variation: 0.7  # Volume levels (librosa)
+
+  # Augmentation techniques configuration
+  techniques:
+    # NEW: nlpaug-based augmenters for call center ASR
+    colored_noise:
+      enabled: true
+      noise_colors: ['white', 'pink', 'brown']  # Random selection
+      zone: [0.0, 1.0]        # Apply noise to entire audio
+      coverage: 0.3           # 30% of the zone (reduced from 1.0 to prevent overwhelming noise)
+
+    crop_audio:
+      enabled: true
+      zone: [0.1, 0.9]        # Avoid cropping start/end
+      coverage: 0.15          # Remove 15% of audio (packet loss)
+
+    vtlp:
+      enabled: true
+      factor_range: [0.9, 1.1]  # Vocal tract length perturbation
+      zone: [0.2, 0.8]        # Apply to middle section
+      coverage: 0.1           # 10% of the zone
+
+    mask_audio:
+      enabled: true
+      zone: [0.1, 0.9]        # Avoid masking start/end
+      coverage: 0.1           # Mask 10% of audio (codec artifacts)
+      mask_with_noise: true   # Fill masked regions with noise
+
+    # KEPT: Librosa-based augmenters (proven techniques)
+    pitch_shift:
+      enabled: true
+      n_steps_range: [-2, 2]  # semitones to shift up/down
+
+    time_stretch:
+      enabled: true
+      rate_range: [0.9, 1.1]  # speed factor (0.9 = slower, 1.1 = faster)
+
+    volume_variation:
+      enabled: true
+      gain_db_range: [-6, 6]  # dB to increase/decrease volume
+
+    # DEPRECATED: Legacy background noise (use colored_noise instead)
+    # Keep for backward compatibility
+    background_noise:
+      enabled: false
+      noise_level_range: [0.001, 0.005]  # noise amplitude
+      snr_db_range: [15, 25]  # Signal-to-noise ratio in dB
+
+  # LEGACY: Distribution strategy (only used if probabilities not set)
+  # "random": each sample gets random combination of techniques
+  # "all": each sample gets all techniques applied
+  # "single": each sample gets exactly one technique
+  strategy: "random"
+
+  # For random strategy: min and max number of techniques per sample
+  min_techniques_per_sample: 1
+  max_techniques_per_sample: 2
+
+# TSV output format
+tsv_format:
+  separator: "\t"
+  columns:
+    - path
+    - transcription
+    - duration
+  include_header: true
+
+# MLflow experiment tracking
+mlflow:
+  enabled: true
+  experiment_name: "asr_data_augmentation"
+  tracking_uri: "http://192.168.8.18:5000"  # null = local mlruns/
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  log_file: "output/pipeline.log"
